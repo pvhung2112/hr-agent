@@ -5,9 +5,9 @@ node_modules/
 dist/
 build/
 
-# Environment Variables (Chặn để không lộ Gemini API Key)
-.env
-*.env
+# Environment Variables (allow .env to be tracked)
+# .env
+# *.env
 
 # Logs
 logs

@@ -38,7 +38,8 @@ export const getVerificationDetail = async (req: Request, res: Response): Promis
     });
   } catch (error: any) {
     console.error('Lỗi khi lấy thông tin kiểm chứng:', error);
-    const status = error.message === 'Not found!' ? 404 : 400;
+    const isNotFound = error.message === 'Not found!' || error.message?.includes('Không tìm thấy');
+    const status = isNotFound ? 404 : 400;
     res.status(status).json({
       success: false,
       message: error.message ?? 'Đã xảy ra lỗi khi lấy thông tin kiểm chứng!',

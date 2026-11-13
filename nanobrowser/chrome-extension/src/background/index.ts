@@ -101,7 +101,8 @@ chrome.runtime.onMessageExternal.addListener((message: any, sender, sendResponse
             if (event.state === ExecutionState.TASK_OK) {
               resolve(event.data ?? event.message);
             } else if (event.state === ExecutionState.TASK_FAIL || event.state === ExecutionState.TASK_CANCEL) {
-              reject(new Error(event.data ?? event.message ?? 'Task failed or cancelled'));
+              const errMsg = event.data?.details || (typeof event.data === 'string' ? event.data : event.message) || 'Task failed or cancelled';
+              reject(new Error(errMsg));
             }
           });
           executor.execute();
@@ -123,7 +124,8 @@ chrome.runtime.onMessageExternal.addListener((message: any, sender, sendResponse
 
       } catch (error: any) {
         console.error("Lỗi hệ thống AI:", error);
-        sendResponse({ success: false, error: error.message || "Lỗi không xác định từ AI." });
+        const errMsg = error?.message && error.message !== '[object Object]' ? error.message : (typeof error === 'string' ? error : (error?.details || JSON.stringify(error) || 'Lỗi không xác định từ AI.'));
+        sendResponse({ success: false, error: errMsg });
         if (newTab.id) chrome.tabs.remove(newTab.id);
       }
     });

@@ -122,13 +122,14 @@ const CandidateDetail = () => {
           return;
         }
       } catch (checkError) {
-        if (checkError.response?.status !== 404) {
+        const isNotFound = checkError.response?.status === 404 || (checkError.response?.status === 400 && checkError.response?.data?.message?.includes('kiểm chứng'));
+        if (!isNotFound) {
           throw checkError;
         }
         console.log("Chưa có dữ liệu kiểm chứng, bắt đầu quét mới...");
       }
 
-      const extensionId = import.meta.env.VITE_EXTENSION_ID;
+      const extensionId = import.meta.env.VITE_EXTENSION_ID || 'oecpjjldlnnfkookbhckpojkkjhfnblc';
 
       if (!extensionId) {
         toast.error("Extension ID chưa được cấu hình. Kiểm tra file .env!");
@@ -152,6 +153,13 @@ const CandidateDetail = () => {
           candidateID: candidateID,
         },
         (response) => {
+          const lastError = window.chrome?.runtime?.lastError;
+          if (lastError) {
+            console.error('Chrome extension error:', lastError);
+            toast.error('Không kết nối được Extension! Vui lòng kiểm tra ID hoặc bật Nanobrowser: ' + lastError.message);
+            setVerifyingLoading(false);
+            return;
+          }
           if (response && response.success) {
             const dataJson = JSON.parse(response.data);
             console.log(dataJson);
@@ -159,10 +167,15 @@ const CandidateDetail = () => {
             setShowSaveModal(true);
             setVerifyingLoading(false);
           } else {
-            toast.error(
-              "Lỗi xác thực: " +
-                (response?.error || "Không kết nối được Extension"),
-            );
+            let errorMsg = response?.error;
+            if (typeof errorMsg === 'object') {
+              errorMsg = errorMsg?.details || errorMsg?.message || JSON.stringify(errorMsg);
+            }
+            if (!errorMsg || errorMsg === '[object Object]') {
+              errorMsg = 'Tác vụ AI thất bại! Vui lòng mở cài đặt Nanobrowser (Options) và nhập Gemini API Key hoặc kiểm tra quyền truy cập tab GitHub.';
+            }
+            console.error('Chi tiết lỗi từ Extension:', response);
+            toast.error('Lỗi xác thực: ' + errorMsg);
             setVerifyingLoading(false);
           }
         },
